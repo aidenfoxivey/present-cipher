@@ -30,6 +30,12 @@ impl Present80bitKey {
     }
 }
 
+impl Default for Present80bitKey {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Present128bitKey {
     pub data: BitArray<[u8; 16]>,
 }
@@ -47,6 +53,12 @@ impl Present128bitKey {
         Present128bitKey {
             data: BitArray::<[u8; 16]>::new(bytes),
         }
+    }
+}
+
+impl Default for Present128bitKey {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
