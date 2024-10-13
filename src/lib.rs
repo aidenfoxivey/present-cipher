@@ -1,11 +1,54 @@
 use bitvec::prelude::*;
+use rand::{rngs::OsRng, RngCore};
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 
-struct Present80bitKey(BitArray<[u8; 10]>);
-struct Present128bitKey(BitARray<[u8; ]>);
+pub enum PresentKey {
+    Key80(Present80bitKey),
+    Key128(Present128bitKey),
+}
+
+pub struct Present80bitKey {
+    pub data: BitArray<[u8; 10]>,
+}
+
+impl Present80bitKey {
+    /// Generate a new 80 bit key from OS's secure RNG.
+    pub fn new() -> Present80bitKey {
+        let mut arr = BitArray::<[u8; 10]>::new([0; 10]);
+        OsRng.fill_bytes(arr.as_raw_mut_slice());
+        Present80bitKey { data: arr }
+    }
+
+    /// Generate a new 80 bit key from a bit array.
+    pub fn from_bytes(bytes: [u8; 10]) -> Present80bitKey {
+        Present80bitKey {
+            data: BitArray::<[u8; 10]>::new(bytes),
+        }
+    }
+}
+
+pub struct Present128bitKey {
+    pub data: BitArray<[u8; 16]>,
+}
+
+impl Present128bitKey {
+    /// Generate a new 128 bit key from OS's secure RNG.
+    pub fn new() -> Present128bitKey {
+        let mut arr = BitArray::<[u8; 16]>::new([0; 16]);
+        OsRng.fill_bytes(arr.as_raw_mut_slice());
+        Present128bitKey { data: arr }
+    }
+
+    /// Generate a new 128 bit key from a bit array.
+    pub fn from_bytes(bytes: [u8; 16]) -> Present128bitKey {
+        Present128bitKey {
+            data: BitArray::<[u8; 16]>::new(bytes),
+        }
+    }
+}
 
 /// `sbox` operates on a nibble.
 fn sbox(x: u8) -> u8 {
@@ -29,36 +72,39 @@ fn s_box_layer(state: &mut BitArray<[u8; 8]>) {
     }
 }
 
+/// Apply permutations on a single round.
 fn p_layer(state: &mut BitVec<u64, Msb0>) {
     const PERMUTATION: [u8; 64] = [
         0, 16, 32, 48, 1, 17, 33, 49, 2, 18, 34, 50, 3, 19, 35, 51, 4, 20, 36, 52, 5, 21, 37, 53,
         6, 22, 38, 54, 7, 23, 39, 55, 8, 24, 40, 56, 9, 25, 41, 57, 10, 26, 42, 58, 11, 27, 43, 59,
         12, 28, 44, 60, 13, 29, 45, 61, 14, 30, 46, 62, 15, 31, 47, 63,
     ];
-
-    PERMUTATION.iter().enumerate().fold(state, |prev, (i, p_i)| )
-
     let original = state.clone();
-    // The first time Sarah saw him, she nearly spilled her coffee all over her favorite blue sweater. It wasn't his striking good looks or his confident stride that caught her off guard—it was the fact that he was carrying an exact replica of the obscure, out-of-print book she'd been hunting for years.
-    // "Excuse me," she called out, her voice a mix of excitement and nervousness. The man turned, his green eyes curious. "That book you're carrying—where did you find it?"
-    // He smiled, and Sarah felt her heart skip a beat. "Oh, this? It's a family heirloom. I'm James, by the way."
-    // "Sarah," she replied, extending her hand. As they shook hands, she couldn't help but notice how perfectly her smaller hand fit into his.
-    // Over the next hour, they sat in the quaint coffee shop, discussing the book's themes, its elusive author, and their shared love for forgotten literature. Sarah found herself captivated not just by James's knowledge, but by the way his eyes lit up when he talked about his passions.
-    // As the sun began to set, casting a warm glow through the café windows, Sarah realiz
     for (i, &perm_index) in PERMUTATION.iter().enumerate() {
         state.set(i, original[perm_index as usize]);
     }
 }
 
-fn generate_round_keys(key: Option<Present80bitKey, Present128bitKey>) -> Vec<BitArray<[u8; 8]>> {
+fn generate_round_keys(key: &mut PresentKey) -> Vec<BitArray<[u8; 8]>> {
+    let mut result: Vec<BitArray<[u8; 8]>> = Vec::with_capacity(10);
     match key {
-        Present80bitKey => {
-            todo!();
+        PresentKey::Key80(inside) => {
+            for round_counter in 0..10 {
+                let mut round_key = BitArray::<[u8; 8]>::new([0; 8]);
+                round_key.clone_from_bitslice(&inside.data[0..64]);
+                result.push(round_key);
+                inside.data.shift_left(61); // rotate by 61 positions to the left
+                let tmp: u8 = inside.data[79..76].load();
+                inside.data[79..76].store(sbox(tmp)); // feed 79 to 76 through sbox
+                let tmp: u8 = inside.data[19..15].load();
+                inside.data[19..15].store(round_counter ^ tmp); // store
+            }
         }
-        Present128bitKey => {
-            todo!();
+        PresentKey::Key128(_) => {
+            todo!("Fixing key80 first!");
         }
-    }
+    };
+    result
 }
 
 // fn add_round_key(state: &mut BitVec::<u64, Msb0>, round_key: BitVec<u64, Msb0>) {
