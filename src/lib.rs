@@ -106,10 +106,10 @@ fn generate_round_keys(key: &mut PresentKey) -> Vec<BitArray<[u8; 8]>> {
                 round_key.clone_from_bitslice(&inside.data[0..64]);
                 result.push(round_key);
                 inside.data.shift_left(61); // rotate by 61 positions to the left
-                let tmp: u8 = inside.data[79..76].load();
-                inside.data[79..76].store(sbox(tmp)); // feed 79 to 76 through sbox
-                let tmp: u8 = inside.data[19..15].load();
-                inside.data[19..15].store(round_counter ^ tmp); // store
+                let tmp: u8 = inside.data[76..79].load();
+                inside.data[76..79].store(sbox(tmp)); // feed 79 to 76 through sbox
+                let tmp: u8 = inside.data[15..19].load();
+                inside.data[15..19].store(round_counter ^ tmp); // store
             }
         }
         PresentKey::Key128(_) => {
