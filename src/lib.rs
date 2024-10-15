@@ -25,7 +25,7 @@ impl Present80bitKey {
     /// Generate a new 80 bit key from a bit array.
     pub fn from_bytes(bytes: [u8; 10]) -> Present80bitKey {
         Present80bitKey {
-            data: BitArray::<[u8; 10]>::new(bytes),
+            data: BitArray::new(bytes),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Present128bitKey {
     /// Generate a new 128 bit key from a bit array.
     pub fn from_bytes(bytes: [u8; 16]) -> Present128bitKey {
         Present128bitKey {
-            data: BitArray::<[u8; 16]>::new(bytes),
+            data: BitArray::new(bytes),
         }
     }
 }
@@ -79,7 +79,7 @@ fn sbox_u8(x: u8) -> u8 {
 /// Apply the sbox transformation on a given layer of state.
 fn s_box_layer(state: &mut BitArray<[u8; 8]>) {
     for chunk in state.chunks_exact_mut(8) {
-        let byte = chunk.load::<u8>();
+        let byte = chunk.load();
         chunk.store(sbox_u8(byte));
     }
 }
@@ -98,7 +98,7 @@ fn p_layer(state: &mut BitVec<u64, Msb0>) {
 }
 
 fn generate_round_keys(key: &mut PresentKey) -> Vec<BitArray<[u8; 8]>> {
-    let mut result: Vec<BitArray<[u8; 8]>> = Vec::with_capacity(10);
+    let mut result = Vec::with_capacity(10);
     match key {
         PresentKey::Key80(inside) => {
             for round_counter in 0..10 {
