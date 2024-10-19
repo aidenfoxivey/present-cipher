@@ -97,19 +97,17 @@ fn p_layer(state: &mut BitVec<u64, Msb0>) {
     }
 }
 
-fn generate_round_keys(key: &mut PresentKey) -> Vec<BitArray<[u8; 8]>> {
-    let mut result = Vec::with_capacity(10);
+fn generate_round_keys(key: &mut PresentKey) -> [BitArray<[u8; 8]>; 10] {
+    let mut result = [BitArray::<[u8; 8]>::new([0; 8]); 10];
     match key {
         PresentKey::Key80(inside) => {
             for round_counter in 0..10 {
-                let mut round_key = BitArray::<[u8; 8]>::new([0; 8]);
-                round_key.clone_from_bitslice(&inside.data[0..64]);
-                result.push(round_key);
+                result[round_counter].clone_from_bitslice(&inside.data[0..64]);
                 inside.data.shift_left(61); // rotate by 61 positions to the left
                 let tmp: u8 = inside.data[76..79].load();
                 inside.data[76..79].store(sbox(tmp)); // feed 79 to 76 through sbox
                 let tmp: u8 = inside.data[15..19].load();
-                inside.data[15..19].store(round_counter ^ tmp); // store
+                inside.data[15..19].store(round_counter as u8 ^ tmp); // store
             }
         }
         PresentKey::Key128(_) => {
